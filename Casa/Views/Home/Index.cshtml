@@ -1,0 +1,103 @@
+﻿
+@model Casa.Product
+
+@{
+    ViewData["Title"] = "Home Page";
+}
+<h1>Продаж</h1>
+
+
+<div class="container">
+    <div class="row">
+        <div class="col-sm-2">
+            <h3 class="text-center">Категорії</h3>
+            <button class="btn-primary btn" style="margin: 5px" onclick="getProducts(0)">Всі</button>
+            @foreach (Category category in ViewBag.Categories)
+            {
+                <button class="btn-primary btn" style="margin: 5px" onclick="getProducts(@category.Id)">@category.Name</button>
+            }
+        </div>
+        <div class="col-sm-5" id="ProductsCol">
+            <h3 class="text-center">Продукти</h3>
+            @foreach (Product product in ViewBag.Products)
+            {
+                <button class="btn btn-primary" style="margin: 5px" onclick="addToCheck(@product.Id)">@product.Name</button>
+            }
+        </div>
+        <div class="col-sm-5" id="CheckCol">
+            <h3 class="text-center">Чек</h3>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Назва</th>
+                        <th scope="col">Кількість</th>
+                        <th scope="col">Ціна</th>
+                    </tr>
+                </thead>
+                <tbody id="checkTable">
+                </tbody>
+            </table>
+
+            <button class="text-center btn btn-success btn-md" onclick="createCheck()">Створити чек</button>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script src="https://code.jquery.com/jquery-1.10.2.min.js"
+        integrity="sha256-C6CB9UYIS9UJeqinPHWTHVqh/E1uhG5Twh+Y5qFQmYg="
+        crossorigin="anonymous"></script>
+<script>
+    function insideCheck(ID) {
+        var table = document.getElementById('checkTable');
+        var row;
+        var result = false
+        for (i = 0; i < table.childNodes.length; i++) {
+            row = table.childNodes[i];
+            if (row.id == ID) {
+                result = true;
+                break;
+            }
+        }
+        return result;
+    }
+
+    function deleteElement(ID) {
+        $('#' + ID + '').remove();
+    }
+
+    function addToCheck(ID) {
+        if (!insideCheck(ID)) {
+            $.get("Home/GetProduct", { id: ID }, function (data) {
+                $("#checkTable").append("<tr id='" + data.id + "'><th scope = 'row'>" + data.name +
+                    "</th><td><input value='1' type='number' min='0' step='1' class='form-control form-control-sm'/></td><td>"
+                    + data.price + "</td><td><button class='btn-sm btn-primary' onclick='deleteElement(" + data.id + ")'>&#10005;</button></td>");
+            })
+        }
+    }
+
+    function getProducts(id) {
+        $.get("/Home/GetProductList", { CategoryId: id }, function (data) {
+            $("#ProductsCol").empty();
+            $("#ProductsCol").append("<h3 class='text-center'>Продукти</h3>");
+            $.each(data, function (index, row) {
+                console.log(row);
+                $("#ProductsCol").append("<button class='btn btn-primary' style='margin: 5px' onclick='addToCheck(" + row.id + ")'>" + row.name + "</button>")
+            });
+        });
+    }
+    function createCheck() {
+        $.post("/Home/CreateCheck", function (data) {
+            var table = document.getElementById('checkTable');
+            var row;
+            for (i = 1; i < table.childNodes.length; i++) {
+                row = table.childNodes[i];
+                $.post("Home/AddProductToCheck", { checkId: data, productId: row.id, quantity: row.childNodes[1].childNodes[0].value });
+            }
+        });
+        
+    };
+</script>
+
